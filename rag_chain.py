@@ -106,13 +106,14 @@ def get_next_question(topic, difficulty, history, used_questions):
 
     context = "\n\n".join([doc.page_content[:800] for doc in docs[:3]])
 
+    history_str = "\n".join(used_questions[-5:]) # Get last 5 questions
+
     # ---------------------------
     # STRICT GROUNDED PROMPT
     # ---------------------------
     prompt = f"""
 You are a Data Science Interviewer. Your goal is to assess a candidate's 
-knowledge of core Machine Learning and Data Science concepts
-Act like a recruiter .Do not repeate the same question in different ways once done then it is done.Ask questions on fundament topics like list,tuple,dict
+knowledge of core Machine Learning,Data Science concepts,AI concepts,Gen AI concepts.Do not repeate the same question in different ways once done then it is done.Ask questions on fundament topics like list,tuple,dict
 Include coding questions that exactly resembles like hacker rank coding questions.
 
 Phase: {phase}
