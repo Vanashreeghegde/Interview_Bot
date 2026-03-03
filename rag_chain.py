@@ -137,13 +137,16 @@ Phase: {phase}
 Difficulty Level: {difficulty}
 Instruction: {instruction}
 
+
 Rules:
-1. DO NOT ask the "primary goal of a data science interview."
-2. DO NOT ask the same concept in different ways.
-3. If Phase 3: Present a coding problem with clear input/output expectations.
-4. Focus on technical depth (Feature Engineering, Evaluation, Algorithms).
-5. Use ONLY information from CONTEXT.
-6. Must end with ONE question mark. No intro, no explanation.
+1. The question MUST be about the topic: {topic}.
+2. If the CONTEXT provided does not contain {topic} information, ignore the context and ask a general {topic} question.
+3. DO NOT ask the "primary goal of a data science interview."
+4. DO NOT ask the same concept in different ways.
+5. If Phase 3: Present a coding problem with clear input/output expectations.
+6. Focus on technical depth (Feature Engineering, Evaluation, Algorithms).
+7. Use ONLY information from CONTEXT.
+8. Must end with ONE question mark. No intro, no explanation.
 
 CONTEXT:
 {context}
@@ -153,7 +156,7 @@ QUESTION:"""
     question = generate_response(
         prompt,
         model=GENERATION_MODEL,
-        temperature=0.6, # Slightly higher for more variety
+        temperature=0.7, # Slightly higher for more variety
         max_tokens=300
     ).strip()
 
