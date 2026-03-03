@@ -109,7 +109,6 @@ if not st.session_state.started:
 # ===============================
 elif st.session_state.started and not st.session_state.interview_complete:
 
-    st.write(f"**Topic:** {st.session_state.current_topic} | Difficulty: {st.session_state.difficulty}")
     st.info(st.session_state.current_question)
 
     question_index = len(st.session_state.history)
