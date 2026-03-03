@@ -111,7 +111,8 @@ def get_next_question(topic, difficulty, history, used_questions):
     # ---------------------------
     prompt = f"""
 You are conducting a  Data Science interview in professional way that exactly resembles as real interview in the market.
-Act like a recruiter and ask interview questions for the candidate
+Act like a recruiter and ask interview questions for the candidate.Do not repeate the question in different ways once done then it is done.Ask questions on fundament topics like list,tuple,dict
+Do not ask questions like explain python fundaments.Include coding questions that exactly resembles like hacker rank coding questions.
 
 Phase: {phase}
 Difficulty Level: {difficulty}
