@@ -3,6 +3,7 @@ streamlit-autorefresh==1.0.1
 pysqlite3-binary
 langchain-chroma
 langchain-huggingface
+langchain_community
 langchain>=0.3.0
 chromadb
 groq
