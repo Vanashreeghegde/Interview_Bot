@@ -7,6 +7,6 @@ matplotlib
 seaborn
 langchain
 chromadb
-google-ai-generativelanguage
 transformers
 torch
+groq
