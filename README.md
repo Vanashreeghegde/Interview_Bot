@@ -1,6 +1,8 @@
 # 🚀 Personalized Data Science Interview Bot
 
- ![Python](https://img.shields.io/badge/Python-3.12-blue) ![Streamlit](https://img.shields.io/badge/Streamlit-Interactive-orange) ![AI](https://img.shields.io/badge/AI-Powered-red)
+ ![Python](https://img.shields.io/badge/Python-3.12-blue) ![Streamlit](https://img.shields.io/badge/Streamlit-Interactive-orange) ![AI](https://img.shields.io/badge/AI-Powered-red) 
+
+[![Live App](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://ds-interview-bot.streamlit.app/)
 
 **A smart, interactive, fresher-to-intermediate level Data Science interview simulator**  
 Practice real-world interview questions across **Machine Learning, Python, SQL, Statistics, and more** — with **adaptive difficulty**, **live 45-minute timer**, and **instant AI-driven scoring & feedback**.
