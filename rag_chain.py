@@ -110,14 +110,17 @@ def get_next_question(topic, difficulty, history, used_questions):
     # STRICT GROUNDED PROMPT
     # ---------------------------
     prompt = f"""
-You are conducting a structured Data Science interview.
+You are conducting a  Data Science interview in professional way that exactly resembles as real interview in the market.
+Act like a recruiter and ask interview questions for the candidate
 
 Phase: {phase}
 Difficulty Level: {difficulty}
 Instruction: {instruction}
 
 Rules:
+- Ask question like what is the difference between Data scientist,Machine learning,AI 
 - Use ONLY information from CONTEXT.
+- Do not ask primary goal of data science interview
 - Ask exactly ONE question.
 - Must end with one question mark.
 - No explanation.
