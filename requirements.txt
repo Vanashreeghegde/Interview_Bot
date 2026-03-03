@@ -6,6 +6,7 @@ langchain-huggingface
 langchain_community
 langchain>=0.3.0
 chromadb
+rank_bm25
 groq
 transformers
 torch
