@@ -1,93 +1,153 @@
 import os
+import json
 import re
-import random
 from dotenv import load_dotenv
-import google.generativeai as genai
+from groq import Groq
 from retriver import HybridRetriever
 
 load_dotenv()
 
 # ===============================
-# Initialize Gemini
+# Initialize Groq
 # ===============================
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash-lite")
+client = Groq(api_key=os.getenv("api"))
+
+GENERATION_MODEL = "llama-3.1-8b-instant"
+EVALUATION_MODEL = "llama-3.1-8b-instant"
 
 retriever = HybridRetriever()
 
-# ===============================
+
+# ==================================================
 # GENERATION WRAPPER
-# ===============================
+# ==================================================
 
-def generate_response(prompt, temperature=0.4, max_tokens=500):
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.types.GenerationConfig(
-            temperature=temperature,
-            max_output_tokens=max_tokens
-        )
+def generate_response(prompt, model, temperature=0.4, max_tokens=500):
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "You are a professional Data Science interviewer."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,
     )
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
 
 
 # ==================================================
-# GET NEXT QUESTION (REAL INTERVIEW ARCHITECTURE)
+# ADAPTIVE DIFFICULTY CONTROLLER
 # ==================================================
 
-def get_next_question(topic, difficulty, used_questions):
+def adjust_difficulty(current_difficulty, history):
+    """
+    Adaptive difficulty:
+    1 = Easy
+    2 = Medium
+    3 = Hard
+    """
 
-    # 🔥 Retrieval for grounding only
-    query = f"{topic} production challenges system design tradeoffs failure cases"
+    if not history:
+        return current_difficulty
+
+    recent_scores = [item["score"] for item in history[-3:]]
+    avg_score = sum(recent_scores) / len(recent_scores)
+
+    if avg_score >= 8 and current_difficulty < 3:
+        return current_difficulty + 1
+
+    if avg_score <= 4 and current_difficulty > 1:
+        return current_difficulty - 1
+
+    return current_difficulty
+
+
+# ==================================================
+# GET NEXT QUESTION (Phase + Adaptive Difficulty)
+# ==================================================
+
+def get_next_question(topic, difficulty, history, used_questions):
+
+    question_count = len(history)
+
+    # ---------------------------
+    # PHASE CONTROL
+    # ---------------------------
+    if question_count < 2:
+        phase = 1  # Fundamentals
+    elif question_count < 5:
+        phase = 2  # ML Case Studies
+    else:
+        phase = 3  # Coding Round
+
+    # ---------------------------
+    # ADJUST DIFFICULTY
+    # ---------------------------
+    difficulty = adjust_difficulty(difficulty, history)
+
+    # ---------------------------
+    # PHASE-BASED QUERY
+    # ---------------------------
+    if phase == 1:
+        query = f"{topic} definition basics difference interview questions difficulty {difficulty}"
+        instruction = "Ask a short conceptual question."
+    elif phase == 2:
+        query = f"{topic} real world case study production tradeoffs business problem difficulty {difficulty}"
+        instruction = "Ask a realistic ML scenario or case study question."
+    else:
+        query = "SQL Python coding data manipulation debugging interview question"
+        instruction = "Ask a coding question. It can be SQL or Python."
 
     docs = retriever.retrieve(query)
 
-    context = ""
-    if docs:
-        context = "\n\n".join([doc.page_content[:800] for doc in docs[:3]])
+    if not docs:
+        return f"What is the basic concept of {topic}?", difficulty
 
-        # 🔥 Real fresher → intermediate interview generation prompt
+    context = "\n\n".join([doc.page_content[:800] for doc in docs[:3]])
+
+    # ---------------------------
+    # STRICT GROUNDED PROMPT
+    # ---------------------------
     prompt = f"""
-    You are a professional Data Science interviewer generating fresher-level to intermediate scenario-based questions.
+You are conducting a structured Data Science interview.
 
-    Topic: {topic}
-    Difficulty: {difficulty} (1 = easy, 2 = intermediate)
+Phase: {phase}
+Difficulty Level: {difficulty}
+Instruction: {instruction}
 
-    Rules:
-    - Begin with basic questions suitable for freshers.
-        Example questions at difficulty 1:
-            - Why is linear regression used?
-            - What is overfitting and how do you prevent it?
-            - How would you handle missing values in a dataset?
-    - Gradually increase difficulty depending on candidate answers.
-    - Must be a complete, realistic scenario.
-    - Must end with exactly ONE question mark.
-    - Must be grammatically correct.
-    - No repeated questions.
-    - Avoid hallucinations.
-    - Do NOT reference any text.
-    - Output ONLY ONE question at a time.
+Rules:
+- Use ONLY information from CONTEXT.
+- Ask exactly ONE question.
+- Must end with one question mark.
+- No explanation.
+- No repetition.
+- No hallucination.
 
-    Now generate the next interview question for a fresher candidate.
-    """
+CONTEXT:
+{context}
+"""
 
-    question = generate_response(prompt, temperature=0.5, max_tokens=300)
-
-    question = question.strip()
+    question = generate_response(
+        prompt,
+        model=GENERATION_MODEL,
+        temperature=0.3,
+        max_tokens=200
+    ).strip()
 
     if not question.endswith("?"):
         question += "?"
 
-    # Strong duplicate detection
+    # Prevent repetition
     for prev in used_questions:
-        if question.lower()[:70] in prev.lower():
-            return f"You are given a production problem related to {topic}. How would you systematically diagnose and solve it?"
+        if question.lower()[:60] in prev.lower():
+            return f"Explain an important concept related to {topic}?", difficulty
 
-    return question
+    return question, difficulty
 
 
 # ==================================================
-# EVALUATE ANSWER
+# EVALUATE ANSWER (Structured Rubric)
 # ==================================================
 
 def evaluate_answer(question: str, answer: str):
@@ -95,74 +155,92 @@ def evaluate_answer(question: str, answer: str):
     prompt = f"""
 You are a strict technical interviewer.
 
-Evaluate the candidate’s answer to this interview question.
-
 Question:
 {question}
 
 Candidate Answer:
 {answer}
 
-Score from 0 to 10 based on:
+Score using rubric:
 
-- Technical accuracy
-- Depth of reasoning
-- Practical awareness
-- Clarity of explanation
+Technical Accuracy (0–3)
+Depth of Reasoning (0–3)
+Practical Awareness (0–2)
+Clarity (0–2)
 
-Return ONLY a single integer from 0 to 10.
-No explanation.
+Return STRICT JSON only:
+{{
+  "accuracy": int,
+  "reasoning": int,
+  "practical": int,
+  "clarity": int
+}}
 """
 
-    response = generate_response(prompt, temperature=0.2, max_tokens=50)
+    response = generate_response(
+        prompt,
+        model=EVALUATION_MODEL,
+        temperature=0.1,
+        max_tokens=200
+    )
 
-    match = re.search(r'\b([0-9]|10)\b', response)
-    score = int(match.group()) if match else 5
-
-    return max(0, min(score, 10))
+    try:
+        data = json.loads(response)
+        total_score = (
+            data["accuracy"] +
+            data["reasoning"] +
+            data["practical"] +
+            data["clarity"]
+        )
+        return max(0, min(total_score, 10))
+    except:
+        match = re.search(r'\b([0-9]|10)\b', response)
+        return int(match.group()) if match else 5
 
 
 # ==================================================
-# FINAL INTERVIEW FEEDBACK
+# FINAL FEEDBACK
 # ==================================================
 
-def generate_final_feedback(history, average_score, final_difficulty):
+def generate_final_feedback(history):
+
+    if not history:
+        return "No interview data available."
+
+    avg_score = sum(item["score"] for item in history) / len(history)
 
     transcript = ""
-
     for i, item in enumerate(history, 1):
         transcript += (
-            f"Question {i}:\n{item['question']}\n\n"
-            f"Answer:\n{item['answer']}\n\n"
+            f"Question {i}:\n{item['question']}\n"
+            f"Answer:\n{item['answer']}\n"
             f"Score: {item['score']}/10\n"
-            f"-------------------------\n"
+            f"-----------------------\n"
         )
 
     prompt = f"""
-You are a Senior Data Scientist conducting a final hiring review.
+You are a Senior Data Scientist reviewing a candidate.
 
-Below is the full interview transcript:
-
+Transcript:
 {transcript}
 
-Average Score: {average_score}
-Final Difficulty Level Reached: {final_difficulty}
+Average Score: {avg_score}
 
 Provide:
-
-1. Overall performance summary
-2. Strongest technical areas
+1. Performance summary
+2. Strongest areas
 3. Weakest areas
-4. Recurring gaps
-5. Clear improvement roadmap
-6. Final overall score out of 10
-7. Hiring decision:
-   - Strong Hire
-   - Hire
-   - Borderline
-   - Reject
+4. Skill gaps
+5. Improvement roadmap
+6. Final score out of 10
+7. Hiring decision
 
-Be realistic and professional.
+Be realistic.
 """
 
-    return generate_response(prompt, temperature=0.5, max_tokens=800)
+    return generate_response(
+        prompt,
+        model=EVALUATION_MODEL,
+        temperature=0.4,
+        max_tokens=800
+    )
