@@ -12,7 +12,7 @@ TOPICS = [
     "Machine Learning",
     "Statistics",
     "SQL",
-    "Python fundamentals",
+    "Python",
     "Python coding question",
     "SQL coading question",
     "Deep Learning",
@@ -22,7 +22,7 @@ TOPICS = [
     "ML System Design",
     "Generative AI",
     "LLM",
-    "RAG Design"
+    "RAG"
 ]
 
 st.set_page_config(page_title="DS Interview Bot", layout="wide")
