@@ -13,8 +13,6 @@ TOPICS = [
     "Statistics",
     "SQL",
     "Python",
-    "Python coding question",
-    "SQL coading question",
     "Deep Learning",
     "Model Evaluation",
     "Feature Engineering",
