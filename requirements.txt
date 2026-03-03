@@ -1,0 +1,33 @@
+# Streamlit for app
+streamlit==1.26.0
+streamlit-autorefresh==0.1.7
+langchain==0.1.0  # adjust to your exact version
+langchain-community==0.0.1  # adjust to your version
+
+# LangChain and community modules
+langchain==0.1.0
+langchain-embeddings-huggingface==0.1.0
+langchain-chroma==0.1.0
+langchain-community==0.1.0
+langchain-text-splitters==0.1.0
+
+# Chroma vector store
+chromadb==0.3.26
+
+# Hugging Face embeddings
+sentence-transformers==2.2.2
+transformers==4.44.0
+torch>=2.0.0
+
+# PDF and URL loaders
+unstructured==0.9.20
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Utility packages
+numpy==1.25.2
+pandas==2.1.0
