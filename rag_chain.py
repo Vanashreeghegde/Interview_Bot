@@ -67,9 +67,18 @@ def adjust_difficulty(current_difficulty, history):
 # GET NEXT QUESTION (Phase + Adaptive Difficulty)
 # ==================================================
 
-def get_next_question(topic, difficulty, history, used_questions):
+# ==================================================
+# GET NEXT QUESTION (Phase + Adaptive Difficulty + Feedback)
+# ==================================================
 
+def get_next_question(topic, difficulty, history, used_questions, penalized_questions=None):
+    """
+    history: List of dictionaries with previous scores
+    used_questions: List of strings of questions already asked
+    penalized_questions: List of questions the user marked as 'useless'
+    """
     question_count = len(history)
+    penalized_questions = penalized_questions or []
 
     # ---------------------------
     # PHASE CONTROL
@@ -87,75 +96,79 @@ def get_next_question(topic, difficulty, history, used_questions):
     difficulty = adjust_difficulty(difficulty, history)
 
     # ---------------------------
+    # PREPARE HISTORY FOR PROMPT
+    # ---------------------------
+    history_str = "\n- ".join(used_questions[-5:]) if used_questions else "None"
+    penalties_str = "\n- ".join(penalized_questions[-3:]) if penalized_questions else "None"
+
+    # ---------------------------
     # PHASE-BASED QUERY
     # ---------------------------
     if phase == 1:
-        query = f"{topic} definition basics difference interview questions difficulty {difficulty}"
-        instruction = "Ask a short conceptual question."
+        query = f"{topic} python list tuple dict definition basics interview questions difficulty {difficulty}"
+        instruction = "Ask a crisp conceptual question about Python fundamentals or ML basics."
     elif phase == 2:
         query = f"{topic} real world case study production tradeoffs business problem difficulty {difficulty}"
         instruction = "Ask a realistic ML scenario or case study question."
     else:
-        query = "SQL Python coding data manipulation debugging interview question"
-        instruction = "Ask a coding question. It can be SQL or Python."
+        query = "Python SQL algorithmic coding logic challenges hacker rank style"
+        instruction = "Ask a coding challenge. Provide a problem statement (HackerRank style)."
 
     docs = retriever.retrieve(query)
 
     if not docs:
-        return f"What is the basic concept of {topic}?", difficulty
-
-    context = "\n\n".join([doc.page_content[:800] for doc in docs[:3]])
-
-    history_str = "\n".join(used_questions[-5:]) # Get last 5 questions
+        context = f"Standard Data Science concepts related to {topic}."
+    else:
+        context = "\n\n".join([doc.page_content[:800] for doc in docs[:3]])
 
     # ---------------------------
-    # STRICT GROUNDED PROMPT
+    # STRICT GROUNDED PROMPT (With Learning from Penalties)
     # ---------------------------
     prompt = f"""
-You are a Data Science Interviewer. Your goal is to assess a candidate's 
-knowledge of core Machine Learning,Data Science concepts,AI concepts,Gen AI concepts.Do not repeate the same question in different ways once done then it is done.Ask questions on fundament topics like list,tuple,dict
-Include coding questions that exactly resembles like hacker rank coding questions.
+You are a Professional Data Science Interviewer. 
+
+PREVIOUSLY ASKED (DO NOT REPEAT):
+- {history_str}
+
+USER FEEDBACK (THESE WERE LABELED 'USELESS' - AVOID THESE TYPES):
+- {penalties_str}
 
 Phase: {phase}
 Difficulty Level: {difficulty}
 Instruction: {instruction}
 
 Rules:
-- Start asking question in simple one line question from python then adapt the deficulty
-- IGNORE basic HR questions or "what is an interview" questions.
-- Focus on "Mid-Level" technical topics: 
-   - Feature Engineering (Scaling, Encoding)
-   - Model Evaluation (Precision, Recall, F1, ROC-AUC)
-   - Standard Algorithms (Random Forest, Logistic Regression, K-Means)
-   - Overfitting and Underfitting.
-- Keep the questions practical and technical, but not overly academic.
-- Stictly avoid asking single questions in different ways
-- Use ONLY information from CONTEXT.
-- Do not ask primary goal of data science interview
-- Ask exactly ONE question.
-- Must end with one question mark.
-- No explanation.
-- No repetition.
-- No hallucination.
+1. DO NOT ask the "primary goal of a data science interview."
+2. DO NOT ask the same concept in different ways.
+3. If Phase 3: Present a coding problem with clear input/output expectations.
+4. Focus on technical depth (Feature Engineering, Evaluation, Algorithms).
+5. Use ONLY information from CONTEXT.
+6. Must end with ONE question mark. No intro, no explanation.
 
 CONTEXT:
 {context}
-"""
+
+QUESTION:"""
 
     question = generate_response(
         prompt,
         model=GENERATION_MODEL,
-        temperature=0.3,
-        max_tokens=200
+        temperature=0.6, # Slightly higher for more variety
+        max_tokens=300
     ).strip()
 
+    # Ensure it's a question
     if not question.endswith("?"):
         question += "?"
 
-    # Prevent repetition
+    # ---------------------------
+    # FINAL REPETITION CHECK (String Matching)
+    # ---------------------------
     for prev in used_questions:
-        if question.lower()[:60] in prev.lower():
-            return f"Explain an important concept related to {topic}?", difficulty
+        # Check if the first 40 chars match any previous question to catch rephrasing
+        if question.lower()[:40] in prev.lower():
+            # Fallback if AI tries to repeat
+            return f"Discuss the tradeoffs of using different evaluation metrics for {topic}?", difficulty
 
     return question, difficulty
 
