@@ -25,7 +25,7 @@ Practice real-world interview questions across **Machine Learning, Python, SQL, 
 
 - **Python 3.12** – Core backend logic  
 - **Streamlit** – Interactive frontend for live questions and timer  
-- **Google Gemini API** – AI-powered question generation & evaluation  
+- **Goq API** – AI-powered question generation & evaluation  
 - **Hybrid RAG Retrieval** – Ensures contextually accurate, non-hallucinated questions  
 - **.env** – Secure API key management  
 
