@@ -4,6 +4,10 @@
 
 [![Live App](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://ds-interview-bot.streamlit.app/)
 
+<p align="center">
+  <img src="[https://cdn.dribbble.com/userupload/22150967/file/original-612a6a45e0427e8c8636cf50f0379940.gif]" width="700">
+</p>
+
 **A smart, interactive, fresher-to-intermediate level Data Science interview simulator**  
 Practice real-world interview questions across **Machine Learning, Python, SQL, Statistics, and more** — with **adaptive difficulty**, **live 45-minute timer**, and **instant AI-driven scoring & feedback**.
 
