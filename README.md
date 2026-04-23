@@ -5,7 +5,7 @@
 [![Live App](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://ds-interview-bot.streamlit.app/)
 
 <p align="center">
-  <img src="[https://cdn.dribbble.com/userupload/22150967/file/original-612a6a45e0427e8c8636cf50f0379940.gif]" width="700">
+  <img src="[https://cdn.dribbble.com/userupload/22150967/file/original-612a6a45e0427e8c8636cf50f0379940.gif]" width="800">
 </p>
 
 **A smart, interactive, fresher-to-intermediate level Data Science interview simulator**  
